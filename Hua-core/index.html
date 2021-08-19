@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>talk with .json</title>
+</head>
+<body>
+    <h1>HuaCore---V1.0</h1>
+    <h1>命令/消息</h1>
+    <input type="text" id="txt" placeholder="请输入内容"><br>
+    <button id=btn >发送</button>
+    <select id="sele">
+        <option value=cmd>command</option>
+        <option value="tk">talk</option>
+        <option value="tl">tell</option>
+    </select><button id='settype'>设定</button>
+    <div id="tgt"></div>
+    <h1>接收到的完整信息</h1>
+    <ul id="hz" style="height: 50mm;width:80% ;;overflow-y: scroll;background-color: #f0f0f0;left: 50%;right: 50%;"></ul>
+    <button id="clal" style="width: 50px;height: 25px;">清空</button>
+    <h1>订阅事件</h1>
+    <h2>玩家消息</h2><button id="msg-s" style="width: 50px;height: 25px;">监听</button><button id="unmsg-s" style="width: 100px;height: 25px;">停止监听</button>
+    <ul id="ms" style="height: 50mm;width:80% ;;overflow-y: scroll;background-color: #f0f0f0;left: 50%;right: 50%;"></ul>
+    <button id="clms" style="width: 50px;height: 25px;">清空</button>
+    <script>
+        con = new WebSocket('ws://localhost:23333')
+        con.onopen = function(){
+            document.getElementById('btn').onclick = function(){
+                var target;
+                try {
+                    target = document.getElementById('playername').value
+                } catch (error) {
+                    target = 'nooo'
+                }
+                con.send(JSON.stringify({
+                pc: true,
+                target:target,
+                type: document.getElementById('sele').value,
+                content: document.getElementById('txt').value
+            }))
+            document.getElementById('txt').value = ""
+            }
+            document.getElementById('msg-s').onclick = function(){
+                con.send(JSON.stringify({
+                    pc: true,
+                    type: "dy",
+                    content: true
+                }))
+                document.getElementById("msg-s").disabled = true;
+                document.getElementById("unmsg-s").disabled = false;
+                alert("已开始监听")
+            }
+            document.getElementById('unmsg-s').onclick = function(){
+                con.send(JSON.stringify({
+                    pc: true,
+                    type: "dy",
+                    content: false
+                }))
+                document.getElementById("msg-s").disabled = false;
+                document.getElementById("unmsg-s").disabled = true;
+                alert("已停止监听")
+            }
+            
+
+        }
+        con.onmessage = function(msg){
+            var p = document.createElement('p')
+            var pp = document.createTextNode(msg.data)
+            p.appendChild(pp)
+            document.getElementById("hz").appendChild(p)
+            inf = JSON.parse(msg.data)
+            switch (inf.body.eventName) {
+                case "PlayerMessage":
+                    var m = document.createElement('p')
+                    //var m1 = document.createTextNode(inf.body.properties.Message)
+                    var m2 = document.createTextNode(inf.body.properties.Sender+":"+inf.body.properties.Message)
+                    //var m3 = document.createTextNode(":")
+                    m.appendChild(m2)
+                    //m.appendChild(m3)
+                    //m.appendChild(m1)
+                    console.log(m,'and',m2)
+                    document.getElementById("ms").appendChild(m)
+                    switch (inf.body.properties.MessageType){
+                        case "me":
+                            switch (inf.body.properties.Message) {
+                                case "抽奖":
+                                    con.send(JSON.stringify({
+                                    pc: true,
+                                    type: "prize",
+                                    content: inf.body.properties.Sender}))
+                                    break;
+                                case "help":
+                                    con.send(JSON.stringify({
+                                    pc: true,
+                                    type: "tl",
+                                    target: inf.body.properties.Sender,
+                                    content: "欢迎使用HuaCore!\n§4§l注意：§r§l只有以/me指令开头本程序才会受理哦§r\n抽奖：花费10金币，由系统随机给予（小几率不会给）你随机数量的随机物品\n传送至<玩家名字>：系统向玩家发出申请，玩家同意后传送你至该玩家身旁\n持续更新中..."}))
+                                    break;
+                                default:
+                                    break;
+                            }
+                            
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+            
+                default:
+                    break;
+            }
+        }
+        document.getElementById('clal').onclick = function(){
+            document.getElementById('hz').innerHTML = ""
+        }
+        document.getElementById('clms').onclick = function(){
+            document.getElementById('ms').innerHTML = ""
+        }
+        document.getElementById('settype').onclick= function(){
+            switch (document.getElementById('sele').value) {
+                case "tl":
+                    document.getElementById('tgt').innerHTML = '<input id="playername" placeholder="玩家名称" style="width: 300px;">'
+                    break;
+            
+                default:
+                    document.getElementById('tgt').innerHTML = ''
+                    break;
+            }
+        }
+    </script>
+    
+</body>
+</html>
